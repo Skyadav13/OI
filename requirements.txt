@@ -1,0 +1,20 @@
+# --- Kotak Neo (execution) ---
+kotakneoapi
+
+# --- Sharekhan (primary data) ---
+# PyPI package name is "shareconnect", NOT "SharekhanApi" - the import
+# path (SharekhanApi.sharekhanConnect) differs from the install name.
+shareconnect
+websocket-client
+# SharekhanApi's generate_session() internally imports `from Crypto.Cipher
+# import AES` (PyCryptodome) but does not declare it as a dependency -
+# without this, login fails with ModuleNotFoundError: No module named
+# 'Crypto' (confirmed real-world issue, not a hypothetical).
+pycryptodome
+
+# --- IIFL (secondary data) ---
+requests
+cryptography
+
+# --- Shared ---
+pyotp

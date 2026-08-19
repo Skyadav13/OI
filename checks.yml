@@ -1,0 +1,59 @@
+name: Bot Code Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"   # matches kotak-neo-python's minimum
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+
+      - name: Syntax check every Python file
+        run: |
+          find . -name "*.py" -not -path "./.git/*" -print0 | xargs -0 -n1 python -m py_compile
+
+      - name: Lint (unused imports, undefined names, obvious errors)
+        run: |
+          pyflakes $(find . -name "*.py" -not -path "./.git/*")
+
+      - name: Run test suite
+        run: |
+          pytest tests/ -v
+
+      - name: Kotak SDK migration scanner (scoped to kotak_client.py only)
+        run: |
+          # Scoped deliberately - the scanner pattern-matches any `.subscribe(...)`
+          # call, which produces false positives against Sharekhan's own
+          # websocket subscribe() method if run against the whole repo.
+          # kotak_client.py is the only file that touches the Kotak SDK directly.
+          python scripts/migrate_from_v2.py kotak_client.py
+
+      - name: Flag unresolved VERIFY markers
+        run: |
+          echo "Spots still needing live-account verification (informational, not a failure):"
+          grep -rn "VERIFY" --include="*.py" . || echo "None found."
+
+      - name: Confirm PAPER mode stays free of Kotak imports
+        run: |
+          # Guards the locked design rule: kotak_client must never be imported
+          # anywhere that runs unconditionally (only inside the LIVE-mode
+          # branch in main.py). A stray top-level import would silently
+          # break the "Kotak fully absent in PAPER mode" guarantee.
+          if grep -rn "^import kotak_client\|^from kotak_client" --include="*.py" . | grep -v "main.py\|trade_manager.py"; then
+            echo "ERROR: kotak_client imported outside main.py/trade_manager.py - review PAPER-mode isolation."
+            exit 1
+          fi
+          echo "OK - kotak_client only referenced where expected."
