@@ -128,8 +128,9 @@ def evaluate_exit(direction: str, entry_price: float, current_price: float,
     if confirmed == reversal_needed:
         return True, "OI_REVERSAL", exit_state
 
-    halfway = (entry_price + wall_target_price) / 2
-    reached_halfway = (current_price >= halfway) if direction == "BULLISH" else (current_price <= halfway)
+    target_distance = wall_target_price - entry_price   # positive for BULLISH, negative for BEARISH
+    activation_point = entry_price + trail_activate_at_pct_of_target * target_distance
+    reached_halfway = (current_price >= activation_point) if direction == "BULLISH" else (current_price <= activation_point)
     if reached_halfway and not exit_state.trailing_active:
         exit_state.trailing_active = True
 
@@ -150,3 +151,4 @@ def evaluate_exit(direction: str, entry_price: float, current_price: float,
         return True, "TARGET", exit_state
 
     return False, None, exit_state
+                     
