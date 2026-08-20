@@ -236,7 +236,7 @@ class OIEngine:
 
     # ---------- full evaluation (the signal audit row) ----------
     def evaluate(self, current_oi: float, time_str: str, call_ois: dict, put_ois: dict,
-                 vix_elevated: bool, atm_strike: int) -> SignalResult:
+                 vix_blocked: bool, atm_strike: int, vix_stale: bool = False) -> SignalResult:
         ts = time.time()
         result = SignalResult(timestamp=ts, atm_strike=atm_strike)
 
@@ -274,8 +274,8 @@ class OIEngine:
             result.block_reason = "whipsaw_guard"
             return result
 
-        if vix_elevated:
-            result.block_reason = "vix_elevated"
+        if vix_blocked:
+            result.block_reason = "vix_data_stale" if vix_stale else "vix_elevated"
             return result
 
         fut_bias = self._persistent_bias(self.cfg.persistence_polls)
