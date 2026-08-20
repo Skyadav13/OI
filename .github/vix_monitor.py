@@ -59,5 +59,4 @@ class VixMonitor:
         return self.is_elevated() or self.is_data_stale()
 
     def current(self):
-        return self.readings[-1] if self.readings
-        else None
+        return self.readings[-1] if self.readings else None
